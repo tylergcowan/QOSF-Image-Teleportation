@@ -126,7 +126,7 @@ print('Circuit size: ', qc_image.decompose().size())
 
 aer_sim = Aer.get_backend('aer_simulator')
 t_qc_image = transpile(qc_image, aer_sim)
-qobj = assemble(t_qc_image, shots=3000) #set high but not too high thatit takes forever
+qobj = assemble(t_qc_image, shots=30) #set high but not too high thatit takes forever
 job_neqr = aer_sim.run(qobj)
 result_neqr = job_neqr.result()
 counts_neqr = result_neqr.get_counts()

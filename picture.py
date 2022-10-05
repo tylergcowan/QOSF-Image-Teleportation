@@ -13,12 +13,13 @@ for xx in b:
     bi.append(format(b[i],'08b'))  # GOAL OF THIS IS TO CONVERT FROM SAY, 216, TO LIKE 10010110
     i+=1
 
-# this is how you'll do it. use this to convert
+# this is how you'll do it. use this to convert at the end
+'''
 c=[]
 for x in bi:
     c.append(int(x,2))
 c=bytearray(c)
-
+'''
 
 # use this
 #image2 = Image.open(io.BytesIO(c))
@@ -32,24 +33,12 @@ i=0
 # the array of 4 bytes to process
 process=[]
 for val in bi:
-    process.append(bytes(val,'utf-8'))
+    process.append(val)
     i+=1
     if i==4:# send it pieces of 4 bytes
         i=0
-        #print(process)
-        #now process the 4?
-        for x in process:
-            #print(type(bytes(x,'utf-8')))
-            final_b.append(x)
-#            final_b.append(bytes(x,'utf-8'))
+        # INSERT CALLS TO PROCESS THE ARRAY OF 4
         process=[]
-
-print(type(final_b))
-
-i=0
-for xy in final_b:
-    final_b[i]=final_b[i].encode('utf-8')
-    i+=1
 
 
 image2 = Image.open(io.BytesIO(final_b))

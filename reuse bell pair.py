@@ -19,7 +19,6 @@ qc_image = QuantumCircuit(intensity, idx, teleport ,cr, crx, crz)
 # set the total number of qubits
 num_qubits = qc_image.num_qubits
 
-# Initialize the quantum circuit
 # Optional: Add Identity gates to the intensity values
 for idx in range(intensity.size):
     qc_image.i(idx)
@@ -28,9 +27,7 @@ for idx in range(intensity.size):
 qc_image.h(8)
 qc_image.h(9)
 
-# Separate with barrier so it is easy to read later.
 qc_image.barrier()
-#print(qc_image)
 
 values=[]
 values.append('00000000')
@@ -129,9 +126,10 @@ print('Circuit dimensions')
 print('Circuit depth: ', qc_image.decompose().depth())
 print('Circuit size: ', qc_image.decompose().size())
 
+shot_count=100
 aer_sim = Aer.get_backend('aer_simulator')
 t_qc_image = transpile(qc_image, aer_sim)
-qobj = assemble(t_qc_image, shots=600) #set high but not too high thatit takes forever
+qobj = assemble(t_qc_image, shots=shot_count) #set high but not too high thatit takes forever
 job_neqr = aer_sim.run(qobj)
 result_neqr = job_neqr.result()
 counts_neqr = result_neqr.get_counts()
@@ -142,11 +140,45 @@ print('Encoded: 11 = 1')
 print(counts_neqr)
 
 
-print(counts_neqr['0 1 1111111111'])
+# from counts, gets the image back:
+#possible_strings are:'0 1 '+
+
+#which classical bits measured can be ignored, but used to search dictionary for all strings
+#bit_ig
 
 
+#print(counts_neqr['0 1 1111111111'])
 
+# how about instead, look for all keys that have 10/01/11/00 at position 4/5, then
+# make sure the trend never breaks. so first establish the rule with the first insance,
+# then check every other one to be sure!
+if(len(counts_neqr.keys()) !=16):
+    print("ERROR: Not all pixel location / intensities are represented, try more shots")
+    exit()
 
+count_00=0
+count_10=0
+count_01=0
+count_11=0
+for key in counts_neqr.keys():
+
+    if (key[4:6]=='01'):
+        count_01=count_01+counts_neqr[key]
+    elif (key[4:6]=='00'):
+        count_00=count_00+counts_neqr[key]
+    elif (key[4:6]=='11'):
+        count_11=count_11+counts_neqr[key]
+    elif (key[4:6]=='10'):
+        count_10=count_10+counts_neqr[key]
+
+#print("00: ",count_00)
+#print("10: ",count_10)
+#print("01 ",count_01)
+#print("11: ",count_11)
+
+if( (count_00+count_10+count_01+count_11)!=shot_count):
+    print("ERROR: some intensity measurement possibilities not accounted for, examine.")
+    exit()
 
 
 

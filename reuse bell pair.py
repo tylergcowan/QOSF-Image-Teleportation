@@ -1,6 +1,5 @@
 import numpy as np
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit, Aer, transpile, assemble
-from qiskit.providers.aer.library import save_statevector
 from qiskit.quantum_info import partial_trace, Statevector
 
 # Initialize the quantum circuit for the image

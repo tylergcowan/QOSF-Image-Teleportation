@@ -13,20 +13,17 @@ for xx in b:
     bi.append(format(b[i],'08b'))  # GOAL OF THIS IS TO CONVERT FROM SAY, 216, TO LIKE 10010110
     i+=1
 
-# this is how you'll do it
-# use this to convert
+# this is how you'll do it. use this to convert
 c=[]
 for x in bi:
     c.append(int(x,2))
 c=bytearray(c)
 
 
+# use this
+#image2 = Image.open(io.BytesIO(c))
+#image2.save("testt123t123t.jpg")
 
-image2 = Image.open(io.BytesIO(c))
-image2.save("testt123t123t.jpg")
-
-exit()
-# first we need to make sure we can unambiguously
 
 final_b=[]
 

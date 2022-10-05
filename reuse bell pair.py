@@ -32,7 +32,14 @@ qc_image.h(9)
 qc_image.barrier()
 #print(qc_image)
 
+values=[]
+values.append('00000000')
+values.append('01100100')
+values.append('11001000')
+values.append('11111111')
+
 # Encode the first pixel, since its value is 0, we will apply ID gates here:
+
 for idx in range(num_qubits-2):
     qc_image.i(idx)
 
@@ -41,13 +48,12 @@ qc_image.draw()
 
 
 # Encode the second pixel whose value is (01100100):
-value01 = '01100100'
 
 # Add the NOT gate to set the position at 01:
 qc_image.x(qc_image.num_qubits-1-2)
 
 # We'll reverse order the value so it is in the same order when measured.
-for idx, px_value in enumerate(value01[::-1]):
+for idx, px_value in enumerate((values[1])[::-1]):
     if(px_value=='1'):
         qc_image.ccx(num_qubits-1-2, num_qubits-2-2, idx)
 
@@ -59,11 +65,10 @@ qc_image.barrier()
 
 
 # Encode the third pixel whose value is (11001000):
-value10 = '11001000'
 
 # Add the 0CNOT gates, where 0 is on X pixel:
 qc_image.x(num_qubits-2-2)
-for idx, px_value in enumerate(value10[::-1]):
+for idx, px_value in enumerate((values[2])[::-1]):
     if(px_value=='1'):
         qc_image.ccx(num_qubits-1-2, num_qubits-2-2, idx)
 qc_image.x(num_qubits-2-2)
@@ -73,10 +78,10 @@ qc_image.barrier()
 #print(qc_image)
 
 # Encode the third pixel whose value is (10101010):
-value11 = '11111111'
+
 
 # Add the CCNOT gates:
-for idx, px_value in enumerate(value11):
+for idx, px_value in enumerate(values[3]):
     if(px_value=='1'):
         qc_image.ccx(num_qubits-1-2,num_qubits-2-2, idx)
 
@@ -126,7 +131,7 @@ print('Circuit size: ', qc_image.decompose().size())
 
 aer_sim = Aer.get_backend('aer_simulator')
 t_qc_image = transpile(qc_image, aer_sim)
-qobj = assemble(t_qc_image, shots=30) #set high but not too high thatit takes forever
+qobj = assemble(t_qc_image, shots=600) #set high but not too high thatit takes forever
 job_neqr = aer_sim.run(qobj)
 result_neqr = job_neqr.result()
 counts_neqr = result_neqr.get_counts()

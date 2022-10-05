@@ -30,10 +30,10 @@ qc_image.h(9)
 qc_image.barrier()
 
 values=[]
-values.append('00000000')
-values.append('01100100')
-values.append('11001000')
-values.append('11111111')
+values.append('00000000') # NOT
+values.append('01100100') # successfully generalized
+values.append('11001000') # succesfully generalized
+values.append('11111111') # NOT
 
 # Encode the first pixel, since its value is 0, we will apply ID gates here:
 
@@ -74,7 +74,7 @@ qc_image.x(num_qubits-2-2)
 qc_image.barrier()
 #print(qc_image)
 
-# Encode the third pixel whose value is (10101010):
+# Encode the third pixel whose value is (11111111)
 
 
 # Add the CCNOT gates:
@@ -149,36 +149,43 @@ print(counts_neqr)
 
 #print(counts_neqr['0 1 1111111111'])
 
-# how about instead, look for all keys that have 10/01/11/00 at position 4/5, then
-# make sure the trend never breaks. so first establish the rule with the first insance,
-# then check every other one to be sure!
-if(len(counts_neqr.keys()) !=16):
-    print("ERROR: Not all pixel location / intensities are represented, try more shots")
-    exit()
 
-count_00=0
-count_10=0
-count_01=0
-count_11=0
+
+# 4 pixel coordinates: [00, 01, 10, 11]
+# 4 expected measurement possibilities (ignoring 2 classical registers used for teleportation)
+counts=[0,0,0,0]
+
 for key in counts_neqr.keys():
+    if (key[4:]=='00'+values[0]):
+        counts[0]=counts[0]+counts_neqr[key]
+    elif (key[4:]=='01'+values[1]):
+        counts[1]=counts[1]+counts_neqr[key]
+    elif (key[4:] == '10'+values[2]):
+        counts[2] = counts[2] + counts_neqr[key]
+    elif (key[4:]=='11'+values[3]):
+        counts[3]=counts[3]+counts_neqr[key]
 
-    if (key[4:6]=='01'):
-        count_01=count_01+counts_neqr[key]
-    elif (key[4:6]=='00'):
-        count_00=count_00+counts_neqr[key]
-    elif (key[4:6]=='11'):
-        count_11=count_11+counts_neqr[key]
-    elif (key[4:6]=='10'):
-        count_10=count_10+counts_neqr[key]
+# the array we will return from the def that does this entire thing:
+process=[]
 
-#print("00: ",count_00)
-#print("10: ",count_10)
-#print("01 ",count_01)
-#print("11: ",count_11)
-
-if( (count_00+count_10+count_01+count_11)!=shot_count):
+# Used to verify this assumption: we have enough shots and low enough noise such that
+# we expect with very high probability to only have 4 unique measurement outcomes,
+# that is: one intensity (encoded in 8 bits) for each of 4 pixel coordinates.
+if( (counts[0]+counts[1]+counts[2]+counts[3])!=shot_count):
     print("ERROR: some intensity measurement possibilities not accounted for, examine.")
     exit()
+else:
+    # we have 4 unique measurement outcomes, which indicates statistical significance
+    process=[values[0],values[1],values[2],values[3]]
+    pass
+
+print(process)
+print(sum(counts))
+
+# when this is all inside a function, return process[], which will then be converted to bytes again
+# and appended to the appropriate final recreated image array.
+
+
 
 
 

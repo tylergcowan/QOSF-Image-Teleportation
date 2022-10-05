@@ -10,22 +10,20 @@ with open("trythis - Copy.jpg", "rb") as image:
 bi=[]
 i=0
 for xx in b:
-
     bi.append(format(b[i],'08b'))  # GOAL OF THIS IS TO CONVERT FROM SAY, 216, TO LIKE 10010110
-    print(b[i],bi[i], int(bi[i],2))
-
     i+=1
 
-c=int(bi[0],2)
-print(c)
+# this is how you'll do it
+# use this to convert
+c=[]
+for x in bi:
+    c.append(int(x,2))
+c=bytearray(c)
 
-print(type(b[1]),type(bi[1]), type(int(bi[1],2)))
-exit()
 
-# great, so the task at hand is to just send b through, and make sure it's identical (or nearly) to the original b.
 
-image2 = Image.open(io.BytesIO(bi))
-image2.save("testt123tt.jpg")
+image2 = Image.open(io.BytesIO(c))
+image2.save("testt123t123t.jpg")
 
 exit()
 # first we need to make sure we can unambiguously

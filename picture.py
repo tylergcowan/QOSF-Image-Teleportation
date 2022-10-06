@@ -4,6 +4,8 @@ import io
 from numpy.random import randint
 import numpy as np
 
+######################### FUNCTIONS ######################################################
+
 def create_bell_pair(qc, a, b):
     """Creates a bell pair in the quantum image circuit using qubits a & b in quantum circuit qc.
     This is done by moving one qubit into the X basis with an H gate, and then applying a CNOT
@@ -493,6 +495,8 @@ def send_file(mentee_path, file_name, mentor_path):
 
     return success
 
+######################### EXAMPLE ######################################################
+
 # mentee folder path, jpg (to be teleported) file name, and mentor folder path
 mentee_path = r"C:\Users\tyler\Documents\GitHub\qosf_app_final\mentee\\"
 file_name = "qosf.jpg"
@@ -500,3 +504,5 @@ mentor_path = r"C:\Users\tyler\Documents\GitHub\qosf_app_final\mentor\\"
 
 # send the image file_name from mentee_path to mentor_path
 success = send_file(mentee_path, file_name, mentor_path)
+
+####################### END OF PROGRAM #################################################

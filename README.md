@@ -6,7 +6,7 @@ This program serves as Tyler Cowan's application for the QOSF Mentorship Program
 Thank you for your consideration, and please don't hesitate to 
 reach out if you have any questions, at tylergcowan@gmail.com. 
 
-send_file is executed from main.py, and accomplishes the following:
+send_file is executed from picture.py, and accomplishes the following:
 
 1. 2 identical encryption keys are generated using the BB84 protocol. Function: get_bb84_keys()
 2. From mentor folder (origin), the image is imported as a bytearray.
@@ -31,7 +31,7 @@ The following packages will need to be installed in order to run this program:
 
 It can be executed by running: 
 
-- python main.py
+- python picture.py
 
 Example inputs to send_file:
 * mentee_path: r"C:\Users\tyler\Documents\GitHub\qosf_app_final\mentee\\"

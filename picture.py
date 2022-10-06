@@ -5,8 +5,8 @@ from numpy.random import randint
 import numpy as np
 
 def create_bell_pair(qc, a, b):
-    """Creates a bell pair in the quantum image circuit using qubits a & b. This
-    is done by moving one qubit into the X basis with an H gate, and then applying a CNOT
+    """Creates a bell pair in the quantum image circuit using qubits a & b in quantum circuit qc.
+    This is done by moving one qubit into the X basis with an H gate, and then applying a CNOT
     gate to the other qubit, using the first qubit as a control"""
     qc.h(a)  # Put qubit a into state |+> using the hadmard gate
     qc.cx(a, b)  # CNOT with the a qubit as the control and b qubit as the target
@@ -47,8 +47,8 @@ def run_circuits(values):
 
     Simulate this quantum circuit with the Aer simulator, and recover the measurement outcomes
     for the 8-bit intensity for each pixel position, encoded in 2 bits.
-
-    Return the now-teleported 2x2 image in the form of a length 4 array of bytes"""
+    :param: 4 8-bit intensity values for each pixel 00/01/10/11 in this image subset
+    :return: the now-teleported 2x2 image in the form of a length 4 array of bytes"""
 
     # Initialize the quantum circuit representation for 4 pixels of the image.
 
@@ -245,18 +245,25 @@ def run_circuits(values):
     return processed
 
 def sample_bits(bits, selection):
+    """
+    Alice and bob randomly compare a chosen number of bits in their keys in order to
+    detect the presence of an eavesdropper, or the influence of noise in the quantum channel. 
+    :return: alice or bob's choice of bits which were sampled/compared, then discarded.
+    """
     sample = []
     for i in selection:
-        # use np.mod to make sure the
-        # bit we sample is always in
-        # the list range
+        # np.mod ensures we stay in bits range
         i = np.mod(i, len(bits))
-        # pop(i) removes the element of the
-        # list at index 'i'
+        # pop out index 'i' element
         sample.append(bits.pop(i))
     return sample
 
 def encode_message(bits, bases):
+    """
+    Alice encodes each bit onto a qubit using the basis X or Z inputted (randomly).
+    0 maps to Z basis and 1 maps to X basis.
+    :return: list of quantum circuits, which represent alice's messsage to bob.
+    """
     message = []
     for i in range(len(bits)):
         qc = QuantumCircuit(1,1)
@@ -276,6 +283,11 @@ def encode_message(bits, bases):
     return message
 
 def measure_message(message, bases):
+    """
+    Bob measures each qubit sent to him by Alice in a randomly chosen
+    basis (X or Z), then stores this classical information.
+    :return: list of measurements that bob performed
+    """
     measurements = []
     for q in range(len(bases)):
         if bases[q] == 0: # measuring in Z-basis
@@ -291,6 +303,13 @@ def measure_message(message, bases):
     return measurements
 
 def remove_garbage(a_bases, b_bases, bits):
+    """
+    Sift alice and bob's keys by matching the random basis choices
+    each of them chose. Throw away bits that were not randomly measured/encoded
+    with the same basis.
+    :return: list of bits that were measured/chosen by alice/bob
+    with the same basis (X or Z).
+    """
     good_bits = []
     for q in range(len(bits)):
         if a_bases[q] == b_bases[q]:
@@ -300,6 +319,11 @@ def remove_garbage(a_bases, b_bases, bits):
     return good_bits
 
 def get_bb84_keys():
+    """
+    BB84 is a quantum key distribution protocol used to distribute identical (ideally)
+    keys to alice and bob, using a quantum channel and a classical information channel.
+    :return: alice and bob's completed bit keys to be used for encryption/decryption.
+    """
 
     # Number of bits to begin BB84 protocol with
     n = 100
@@ -357,6 +381,10 @@ def get_bb84_keys():
     return a_key, b_key
 
 def xor_encrypt(msg, key):
+    """
+    Encrypt (or decrypt) a message using the key using XOR (the bitwise operator is: ^).
+    :return: 8-bit encrypted or decrypted string
+    """
     encrypted = int(msg, 2)^int(key,2)
     return bin(encrypted)[2:].zfill(len(msg))
 
@@ -394,7 +422,7 @@ for val in bi:
     # Teleporting 4 bytes at a time
     if i==4:
         i=0
-        # 4 bytes obtained via teleportation
+        # 4 bytes obtained via teleportation of encrypted NEQR circuit
         tp=run_circuits(to_teleport)
 
         # decrypt format each teleported byte
@@ -411,10 +439,9 @@ for val in bi:
         # reset array of 4 bytes each time it is teleported
         to_teleport = []
 
-
 print("Teleportation and decryption of image complete.")
 
-# hardcoding this last one because real file isn't multiple of 4 pixels
+# hardcoding this last pixel because the file isn't a multiple of 4 pixels
 c.append(int('11011001',2))
 
 # convert teleported/decrypted array of bytes to bytearray type
@@ -427,5 +454,4 @@ Image.LOAD_TRUNCATED_IMAGES = True
 # save image in destination folder (Bob's folder)
 image2.save("final2.jpg")
 
-# make this more explicit, name of the folders, and the image file
 print("Image has been saved in destination folder.")

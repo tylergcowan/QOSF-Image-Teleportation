@@ -27,12 +27,28 @@ def measure_and_send(qc, a, b, crz, crx):
     qc.measure(b, crx)
 
 def bob_gates(qc, qubit, crz, crx):
-    # Here we use c_if to control our gates with a classical
-    # bit instead of a qubit
+    """Bob applies gates to the qubit which will receive the teleported qubit's state, based on the
+    classical bits he recieved from alice. The options are:
+    00: nothing
+    01: X Gate
+    10: Z Gate
+    11: ZX Gate
+    """
+    # c_if is used to control the gates with a bit, not a qubit
     qc.x(qubit).c_if(crx, 1)  # Only apply gates when the classical registers are in the state '1'
     qc.z(qubit).c_if(crz, 1)
 
 def run_circuits(values):
+    """Initialize an NEQR quantum circuit to represent the 2x2 image
+    this function receives in the form of intensity bytes for each pixel.
+
+    Then, reuse 2 qubits to form bell-pairs to teleport each of the 10 NEQR qubits from
+    alice to bob, one by one.
+
+    Simulate this quantum circuit with the Aer simulator, and recover the measurement outcomes
+    for the 8-bit intensity for each pixel position, encoded in 2 bits.
+
+    Return the now-teleported 2x2 image in the form of a length 4 array of bytes"""
 
     # Initialize the quantum circuit representation for 4 pixels of the image.
 
@@ -122,7 +138,9 @@ def run_circuits(values):
 
     qc_image.barrier()
 
+    #########################################################################################
     # At this stage, the NEQR circuit representation for the 2x2 image subset has been built.
+    #########################################################################################
 
     # Next, we utilize the 2 teleportation qubits to teleport each NEQR qubit from alice to bob.
     # This process is repeated for each of the 10 NEQR qubits (8 intensity, 2 pixel position)
@@ -145,15 +163,25 @@ def run_circuits(values):
 
         qc_image.barrier()
 
+        # Lastly, Bob chooses which gates to apply to his bell-pair half (teleportation qubit) based on
+        # the classical bits he receives from Alice.
         bob_gates(qc_image, 11, crz, crx)
+
+        # Measure bob's qubit (which has successfully taken on the state of alice's intended qubit to send).
+        # In this case, it will contain information about the 8-bit intensity of each of 4 pixels (2 bits).
         qc_image.measure(11, cr[i])
+
+        # Reset the bell-pair qubits created by Eve so they can be reused to continue teleporting
+        # the entire NEQR represented image susbet (2x2). 10 qubits in total will be teleported.
         qc_image.reset(qc_image.qubits[10:12])
 
         qc_image.barrier()
 
+    #########################################################################################
+    # The full NEQR and teleportation circuit has been built. Time to simulate it:
+    #########################################################################################
 
     # Run the NEQR image representation and subsequent teleportation and measurements with the Aer simulator
-
     # 20 shots failed often. 30 failed rarely. 40 should be safe, and not too time-consuming.
     shot_count = 40
     aer_sim = Aer.get_backend('aer_simulator')

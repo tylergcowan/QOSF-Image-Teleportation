@@ -389,33 +389,37 @@ def xor_encrypt(msg, key):
     return bin(encrypted)[2:].zfill(len(msg))
 
 
-# First, use BB84 to create and distribute binary keys to alice and bob
+# First, use BB84 to create and distribute binary keys to alice and bob, which will be used by Alice to encrypt the
+# image data before encoding it into a quantum circuit, then teleporting it to bob, who will decode it.
 keys = get_bb84_keys()
 a_key = keys[0]
 b_key = keys[1]
 
 # open image in the first folder (alice's folder), read its contents into a bytearray
-with open("trythis - Copy.jpg", "rb") as image:
-    f = image.read()
-    b = bytearray(f)
+img_name="trythis - Copy.jpg"
+with open(img_name, "rb") as image:
+    raw_img = image.read()
+    img_origin = bytearray(raw_img)
 
-bi = []
+# Used to convert from int types to 8 bit string
+img_8bit = []
 i = 0
+
 # convert from int to string of 8 bits, and encrypt using alice's key
-for xx in b:
-    bi.append(format(b[i],'08b'))
-    bi[i] = xor_encrypt(bi[i],a_key)
+for xx in img_origin:
+    img_8bit .append(format(img_origin[i],'08b'))
+    img_8bit[i] = xor_encrypt(img_8bit[i], a_key)
     i+=1
-
-i = 0
-j = 0
 
 # group of bytes to be teleported, 4 at a time
 to_teleport = []
-c = []
+tp_data = []
+i = 0 # 4 bit data package iterator
+j = 0 # teleport completion iterator
 
-# split this into groups of 4, then send the array of 4 bytes to process
-for val in bi:
+# Image array of 8 bit intensity values split into groups of 4 pixels, transformed into a quantum
+# circuit, teleported to bob, and then derypted.
+for val in img_8bit:
     to_teleport.append(val)
     i+=1
 
@@ -423,35 +427,38 @@ for val in bi:
     if i==4:
         i=0
         # 4 bytes obtained via teleportation of encrypted NEQR circuit
-        tp=run_circuits(to_teleport)
+        tp = run_circuits(to_teleport)
 
-        # decrypt format each teleported byte
+        # decrypt and convert each teleported byte back to int representation.
         for x in tp:
 
-            # decrypt using bob's key and add to list:
+            # decrypt using bob's key and add to list of decoded image data:
             x = xor_encrypt(x,b_key)
-            c.append(int(x,2))
+            tp_data.append(int(x,2))
 
-            # % completion tracker for user's awareness
-            print("Image teleportation "+str(100*float(j)/float(len(bi)))[0:4]+" % completed")
+            # % completion tracker for user's awareness of teleportation progress
+            print("Image teleportation "+str(100*float(j)/float(len(img_8bit)))[0:4]+" % completed")
             j+=1
 
         # reset array of 4 bytes each time it is teleported
         to_teleport = []
 
-print("Teleportation and decryption of image complete.")
+print("Teleportation and decryption of Alice's image complete.")
 
 # hardcoding this last pixel because the file isn't a multiple of 4 pixels
-c.append(int('11011001',2))
+tp_data.append(int('11011001',2))
 
 # convert teleported/decrypted array of bytes to bytearray type
-c = bytearray(c)
+tp_data = bytearray(tp_data)
 
 # Create new image using teleported and decrypted bytearray
-image2 = Image.open(io.BytesIO(c))
+image2 = Image.open(io.BytesIO(tp_data))
 Image.LOAD_TRUNCATED_IMAGES = True
 
-# save image in destination folder (Bob's folder)
-image2.save("final2.jpg")
+# save teleported & decrypted image in destination folder (Bob's folder)
+tp_img_name="final2.jpg"
+image2.save(tp_img_name)
 
-print("Image has been saved in destination folder.")
+# Program completed. File has successfully been encrypted by alice, transformed into a quantum circuit,
+# teleported, and decrypted by Bob.
+print(tp_img_name+" has been saved in Bob's folder.")

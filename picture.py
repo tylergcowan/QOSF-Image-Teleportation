@@ -4,7 +4,6 @@ import io
 from numpy.random import randint
 import numpy as np
 
-
 def create_bell_pair(qc, a, b):
     """Creates a bell pair in qc using qubits a & b"""
     qc.h(a)  # Put qubit a into state |+>
@@ -25,7 +24,6 @@ def bob_gates(qc, qubit, crz, crx):
     # bit instead of a qubit
     qc.x(qubit).c_if(crx, 1)  # Apply gates if the registers
     qc.z(qubit).c_if(crz, 1)  # are in the state '1'
-
 
 def run_circuits(values):
 
@@ -113,7 +111,7 @@ def run_circuits(values):
         qc_image.barrier()
 
 
-    shot_count=40 #20 failed rarely. 30 failed rarely.
+    shot_count = 40 #20 failed often. 30 failed rarely. 40 should be safe, and not too slow.
     aer_sim = Aer.get_backend('aer_simulator')
     t_qc_image = transpile(qc_image, aer_sim)
     qobj = assemble(t_qc_image, shots=shot_count)
@@ -287,7 +285,7 @@ b_key = keys[1]
 to_encrypt = '11111111'
 encrypted_text = xor_encrypt(to_encrypt,a_key)
 decrypted_text = xor_encrypt(encrypted_text,b_key)
-print(to_encrypt, encrypted_text, decrypted_text)
+#print(to_encrypt, encrypted_text, decrypted_text)
 
 
 
@@ -297,17 +295,15 @@ with open("trythis - Copy.jpg", "rb") as image:
     b = bytearray(f)
     print(len(b))
 
-bi=[]
-i=0
+bi = []
+i = 0
 for xx in b:
-    bi.append(format(b[i],'08b'))  # GOAL OF THIS IS TO CONVERT FROM SAY, 216, TO LIKE 10010110
+    # GOAL OF THIS IS TO CONVERT FROM SAY, 216, TO LIKE 10010110
+    bi.append(format(b[i],'08b'))
+    bi[i] = xor_encrypt(bi[i],a_key)
     i+=1
 
-################
-################
-# encrypt bi now
-################
-################
+
 
 c=[]
 # split this into groups of 4, then send the array of 4 bytes to process
@@ -321,27 +317,26 @@ for val in bi:
         i=0
         add_2_final_arr=run_circuits(process)
         for x in add_2_final_arr:
+
+            # decrypt now:
+            x = xor_encrypt(x,b_key)
             c.append(int(x,2))
-            #print(int(x,2))
+
             print(str(100*float(j)/float(len(bi)))[0:4]+" % completed")
             j+=1
         process=[]
+
+print("Teleportation and decryption of image complete")
 
 c.append(int('11011001',2)) # hardcoding this last one because real file isn't multiple of 4 pixels
 c = bytearray(c)
 
 
-################
-################
-# decrypt c now
-################
-################
-
-
 
 image2 = Image.open(io.BytesIO(c))
 Image.LOAD_TRUNCATED_IMAGES = True
-image2.save("final.jpg")
+image2.save("final2.jpg")
 
+print("Image has been saved in destination folder")
 
 

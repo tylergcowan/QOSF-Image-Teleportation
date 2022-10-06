@@ -113,7 +113,7 @@ def run_circuits(values):
         qc_image.barrier()
 
 
-    shot_count=30 #20 failed rarely. 30 failed rarely.
+    shot_count=40 #20 failed rarely. 30 failed rarely.
     aer_sim = Aer.get_backend('aer_simulator')
     t_qc_image = transpile(qc_image, aer_sim)
     qobj = assemble(t_qc_image, shots=shot_count)

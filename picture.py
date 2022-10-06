@@ -463,7 +463,7 @@ def send_file(mentee_path, file_name, mentor_path):
             # reset array of 4 bytes each time it is teleported
             to_teleport = []
 
-    print("Teleportation and decryption of Alice's image complete.")
+    print("Teleportation and decryption of image complete.")
 
     # hardcoding this last pixel because the file isn't a multiple of 4 pixels
     tp_data.append(int('11011001',2))
@@ -493,8 +493,10 @@ def send_file(mentee_path, file_name, mentor_path):
 
     return success
 
-mentee_path = r"C:\Users/tyler\Documents\GitHub\qosf_app_final\mentee/"
-file_name = "trythis - Copy.jpg"
-mentor_path = r"C:\Users/tyler\Documents\GitHub\qosf_app_final\mentor/"
+# mentee folder path, jpg (to be teleported) file name, and mentor folder path
+mentee_path = r"C:\Users\tyler\Documents\GitHub\qosf_app_final\mentee\\"
+file_name = "qosf.jpg"
+mentor_path = r"C:\Users\tyler\Documents\GitHub\qosf_app_final\mentor\\"
 
-success=send_file(mentee_path, file_name, mentor_path)
+# send the image file_name from mentee_path to mentor_path
+success = send_file(mentee_path, file_name, mentor_path)

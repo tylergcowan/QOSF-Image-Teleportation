@@ -255,6 +255,11 @@ def sample_bits(bits, selection):
 
 
 
+
+
+
+
+
 with open("trythis - Copy.jpg", "rb") as image:
     f = image.read()
     b = bytearray(f)

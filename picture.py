@@ -177,18 +177,22 @@ for xx in b:
 
 
 # this is how you'll do it. use this to convert at the end
-'''
-c=[]
+#print(bi[1:5])
+#print(type(bi[1]))
+c1=[]
 for x in bi:
-    c.append(int(x,2))
-c=bytearray(c)
-'''
+    c1.append(int(x,2))
+c1=bytearray(c1)
+
+print(c1==b)
+
+#print(c)
 # use this
 #image2 = Image.open(io.BytesIO(c))
-#image2.save("testt123t123t.jpg")
+#image2.save("new.jpg")
+#exit()
 
 
-final_b=[]
 c=[]
 # split this into groups of 4, then send the array of 4 bytes to process
 i=0
@@ -201,41 +205,21 @@ for val in bi:
         # INSERT CALLS TO PROCESS THE ARRAY OF 4
         #print(process)
         add_2_final_arr=run_circuits(process)
-        print(add_2_final_arr)
+        #print(add_2_final_arr)
 
         for x in add_2_final_arr:
             c.append(int(x,2))
+            print(int(x,2))
 
         process=[]
 
-print("quantum circuit execution confirmed!")
-# this is how you'll do it. use this to convert at the end
-'''
-c=[]
-for x in bi:
-    c.append(int(x,2))
-'''
-
+c.append(int('11011001',2)) # hardcoding this last one because real file isn't multiple of 4 pixels
 c=bytearray(c)
-print(c)
-print("bytearray conversion confirmed")
+
 
 image2 = Image.open(io.BytesIO(c))
-image2.save("didthisworklol.jpg")
-
-exit()
-
-'''
-j=0
-for i in final_b:
-    if(final_b[j]!=bi[j])
-    j+=1
-
-print(final_b==bi)
-'''
-
-
-
+Image.LOAD_TRUNCATED_IMAGES = True
+image2.save("didthiswork.jpg")
 
 
 

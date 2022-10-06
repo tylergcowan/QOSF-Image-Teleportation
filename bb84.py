@@ -2,10 +2,9 @@ from qiskit import QuantumCircuit, Aer, assemble
 from numpy.random import randint
 import numpy as np
 
-# https://qiskit.org/textbook/ch-algorithms/quantum-key-distribution.html
 def encode_message(bits, bases):
     message = []
-    for i in range(n):
+    for i in range(len(bits)):
         qc = QuantumCircuit(1,1)
         if bases[i] == 0: # Prepare qubit in Z-basis
             if bits[i] == 0:
@@ -25,7 +24,7 @@ def encode_message(bits, bases):
 def measure_message(message, bases):
     backend = Aer.get_backend('aer_simulator')
     measurements = []
-    for q in range(n):
+    for q in range(len(bases)):
         if bases[q] == 0: # measuring in Z-basis
             message[q].measure(0,0)
         if bases[q] == 1: # measuring in X-basis
@@ -40,7 +39,7 @@ def measure_message(message, bases):
 
 def remove_garbage(a_bases, b_bases, bits):
     good_bits = []
-    for q in range(n):
+    for q in range(len(bits)):
         if a_bases[q] == b_bases[q]:
             # If both used the same basis, add
             # this to the list of 'good' bits
@@ -59,60 +58,62 @@ def sample_bits(bits, selection):
         sample.append(bits.pop(i))
     return sample
 
-n = 100
-# Step 1
-alice_bits = randint(2, size=n)
-alice_bases = randint(2, size=n)
+def bb84_keys():
+    n = 100
+    # Step 1
+    alice_bits = randint(2, size=n)
+    alice_bases = randint(2, size=n)
 
-# Step 2
-message = encode_message(alice_bits, alice_bases)
+    # Step 2
+    message = encode_message(alice_bits, alice_bases)
 
-# Step 3
-bob_bases = randint(2, size=n)
-bob_results = measure_message(message, bob_bases)
+    # Step 3
+    bob_bases = randint(2, size=n)
+    bob_results = measure_message(message, bob_bases)
 
-# Step 4
-bob_key = remove_garbage(alice_bases, bob_bases, bob_results)
-alice_key = remove_garbage(alice_bases, bob_bases, alice_bits)
+    # Step 4
+    bob_key = remove_garbage(alice_bases, bob_bases, bob_results)
+    alice_key = remove_garbage(alice_bases, bob_bases, alice_bits)
 
-# Step 5
-sample_size = 10 # more is safer against eavesdropping and noise
-bit_selection = randint(n, size=sample_size)
-bob_sample = sample_bits(bob_key, bit_selection)
-alice_sample = sample_bits(alice_key, bit_selection)
+    # Step 5
+    sample_size = 10 # more is safer against eavesdropping and noise
+    bit_selection = randint(n, size=sample_size)
+    bob_sample = sample_bits(bob_key, bit_selection)
+    alice_sample = sample_bits(alice_key, bit_selection)
 
-if (bob_sample != alice_sample):
-    print("WARNING: Key samples do not match. Noise or eavesdropper on the quantum channel is  present")
-    exit()
-elif (bob_key!=alice_key):
-    print("WARNING: Keys do not match. Abort quantum key distribution protocol")
-    exit()
+    if (bob_sample != alice_sample):
+        print("WARNING: Key samples do not match. Noise or eavesdropper on the quantum channel is  present")
+        exit()
+    elif (bob_key!=alice_key):
+        print("WARNING: Keys do not match. Abort quantum key distribution protocol")
+        exit()
 
 
-string_ints = [str(int) for int in alice_key]
-str_of_ints = "".join(string_ints)
-a_key=str_of_ints
+    string_ints = [str(int) for int in alice_key]
+    str_of_ints = "".join(string_ints)
+    a_key=str_of_ints
 
-string_ints = [str(int) for int in bob_key]
-str_of_ints = "".join(string_ints)
-b_key = str_of_ints
+    string_ints = [str(int) for int in bob_key]
+    str_of_ints = "".join(string_ints)
+    b_key = str_of_ints
 
-a_key=a_key[0:8]
-b_key=b_key[0:8]
-to_encrypt = '10011000'
+    a_key=a_key[0:8]
+    b_key=b_key[0:8]
+    return a_key, b_key
 
-# returns encrypted byte
 def xor_encrypt(msg, key):
     encrypted = int(msg, 2)^int(key,2)
-    return bin(encrypted)[2:].zfill(len(a))
+    return bin(encrypted)[2:].zfill(len(msg))
 
 def xor_decrypt(msg, key):
     decrypted=int(msg, 2)^int(key,2)
     return bin(decrypted)[2:].zfill(len(msg))
 
-a = "11011111"
-b = "11001011"
+keys=bb84_keys()
+a_key=keys[0]
+b_key=keys[1]
 
+to_encrypt = '11111111'
 encrypted_text=xor_encrypt(to_encrypt,a_key)
 decrypted_text=xor_decrypt(encrypted_text,b_key)
 print(to_encrypt, encrypted_text, decrypted_text)

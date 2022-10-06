@@ -1,8 +1,31 @@
-import numpy as np
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit, Aer, transpile, assemble
-from qiskit.quantum_info import partial_trace, Statevector
-import PIL.Image as Image
+import PIL.Image as Image #NOTE: Pillow imported instead of PIL
 import io
+from numpy.random import randint
+import numpy as np
+
+
+def create_bell_pair(qc, a, b):
+    """Creates a bell pair in qc using qubits a & b"""
+    qc.h(a)  # Put qubit a into state |+>
+    qc.cx(a, b)  # CNOT with a as control and b as target
+
+def alice_gates(qc, psi, a):
+    qc.cx(psi, a)  # CNOT gate applied to q1, controlled by psi (q0)
+    qc.h(psi)  # psi is q0 in our our quantum circuit
+
+def measure_and_send(qc, a, b, crz, crx):
+    """Measures qubits a & b and 'sends' the results to Bob"""
+    qc.barrier()
+    qc.measure(a, crz)
+    qc.measure(b, crx)
+
+def bob_gates(qc, qubit, crz, crx):
+    # Here we use c_if to control our gates with a classical
+    # bit instead of a qubit
+    qc.x(qubit).c_if(crx, 1)  # Apply gates if the registers
+    qc.z(qubit).c_if(crz, 1)  # are in the state '1'
+
 
 def run_circuits(values):
 
@@ -77,49 +100,26 @@ def run_circuits(values):
             qc_image.ccx(num_qubits-1-2,num_qubits-2-2, idx)
     qc_image.barrier()
 
-    def create_bell_pair(qc, a, b):
-        """Creates a bell pair in qc using qubits a & b"""
-        qc.h(a) # Put qubit a into state |+>
-        qc.cx(a,b) # CNOT with a as control and b as target
-
-    def alice_gates(qc, psi, a):
-        qc.cx(psi, a) # CNOT gate applied to q1, controlled by psi (q0)
-        qc.h(psi) # psi is q0 in our our quantum circuit
-
-    def measure_and_send(qc, a, b):
-        """Measures qubits a & b and 'sends' the results to Bob"""
-        qc.barrier()
-        qc.measure(a,crz)
-        qc.measure(b,crx)
-
-    def bob_gates(qc, qubit, crz, crx):
-        # Here we use c_if to control our gates with a classical
-        # bit instead of a qubit
-        qc.x(qubit).c_if(crx, 1) # Apply gates if the registers
-        qc.z(qubit).c_if(crz, 1) # are in the state '1'
-
     # build teleportation pairs
     for i in range(0,num_qubits-2):
         create_bell_pair(qc_image, 10, 11)
         qc_image.barrier()
         alice_gates(qc_image, i, 10)
-        measure_and_send(qc_image, i, 10)
+        measure_and_send(qc_image, i, 10, crz, crx)
         qc_image.barrier()
         bob_gates(qc_image, 11, crz, crx)
         qc_image.measure(11, cr[i])
         qc_image.reset(qc_image.qubits[10:12])
         qc_image.barrier()
 
-    #print(qc_image)
 
-    shot_count=30 #20 failed.
+    shot_count=30 #20 failed rarely. 30 failed rarely.
     aer_sim = Aer.get_backend('aer_simulator')
     t_qc_image = transpile(qc_image, aer_sim)
     qobj = assemble(t_qc_image, shots=shot_count)
     job_neqr = aer_sim.run(qobj)
     result_neqr = job_neqr.result()
     counts_neqr = result_neqr.get_counts()
-    #print(counts_neqr)
 
     # 4 pixel coordinates: [00, 01, 10, 11]
     # 16 maximum expected measurement possibilities (ignoring 2 classical registers used for teleportation)
@@ -161,10 +161,22 @@ def run_circuits(values):
 
     # when this is all inside a function, return process[], which will then be converted to bytes again
     # and appended to the appropriate final recreated image array.
-# https://qiskit.org/textbook/ch-algorithms/quantum-key-distribution.html
+
+def sample_bits(bits, selection):
+    sample = []
+    for i in selection:
+        # use np.mod to make sure the
+        # bit we sample is always in
+        # the list range
+        i = np.mod(i, len(bits))
+        # pop(i) removes the element of the
+        # list at index 'i'
+        sample.append(bits.pop(i))
+    return sample
+
 def encode_message(bits, bases):
     message = []
-    for i in range(n):
+    for i in range(len(bits)):
         qc = QuantumCircuit(1,1)
         if bases[i] == 0: # Prepare qubit in Z-basis
             if bits[i] == 0:
@@ -180,10 +192,10 @@ def encode_message(bits, bases):
         qc.barrier()
         message.append(qc)
     return message
+
 def measure_message(message, bases):
-    backend = Aer.get_backend('aer_simulator')
     measurements = []
-    for q in range(n):
+    for q in range(len(bases)):
         if bases[q] == 0: # measuring in Z-basis
             message[q].measure(0,0)
         if bases[q] == 1: # measuring in X-basis
@@ -195,67 +207,87 @@ def measure_message(message, bases):
         measured_bit = int(result.get_memory()[0])
         measurements.append(measured_bit)
     return measurements
-# https://github.com/VoxelPixel/CiphersInPython/blob/master/XOR%20Cipher.py
-def cipher_encryption(msg,key):
-    print(msg)
-    encrypt_hex = ""
-    key_itr = 0
-    for i in range(len(msg)):
-        temp = ord(msg[i]) ^ ord(key[key_itr])
-        # zfill will pad a single letter hex with 0, to make it two letter pair
-        encrypt_hex += hex(temp)[2:].zfill(2)
-        key_itr += 1
-        if key_itr >= len(key):
-            # once all of the key's letters are used, repeat the key
-            key_itr = 0
 
-    print("Encrypted Text: {}".format(encrypt_hex))
-    return format(encrypt_hex)
-def cipher_decryption(msg,key):
-
-    hex_to_uni = ""
-    for i in range(0, len(msg), 2):
-        hex_to_uni += bytes.fromhex(msg[i:i+2]).decode('utf-8')
-
-    decryp_text = ""
-    key_itr = 0
-    for i in range(len(hex_to_uni)):
-        temp = ord(hex_to_uni[i]) ^ ord(key[key_itr])
-        # zfill will pad a single letter hex with 0, to make it two letter pair
-        decryp_text += chr(temp)
-        key_itr += 1
-        if key_itr >= len(key):
-            # once all of the key's letters are used, repeat the key
-            key_itr = 0
-
-    print("Decrypted Text: {}".format(decryp_text))
-    return format(decryp_text)
 def remove_garbage(a_bases, b_bases, bits):
     good_bits = []
-    for q in range(n):
+    for q in range(len(bits)):
         if a_bases[q] == b_bases[q]:
             # If both used the same basis, add
             # this to the list of 'good' bits
             good_bits.append(bits[q])
     return good_bits
-def sample_bits(bits, selection):
-    sample = []
-    for i in selection:
-        # use np.mod to make sure the
-        # bit we sample is always in
-        # the list range
-        i = np.mod(i, len(bits))
-        # pop(i) removes the element of the
-        # list at index 'i'
-        sample.append(bits.pop(i))
-    return sample
+
+def get_bb84_keys():
+
+    # Number of bits to begin BB84 protocol with
+    n = 100
+
+    # Step 1 - alice creates n random (classical) bits and bases (X/Z)
+    alice_bits = randint(2, size=n)
+    alice_bases = randint(2, size=n)
+
+    # Step 2 - alice encodes the bit values into qubits for each random basis chosen
+    message = encode_message(alice_bits, alice_bases)
+
+    # Step 3 - bob picks n random bases (X/Z), bob measures the qubits that alice generated in step 2
+    bob_bases = randint(2, size=n)
+    bob_results = measure_message(message, bob_bases)
+
+    # Step 4 - alice and bob sift their keys with the information made publicly available:
+    # their random basis choices.
+    bob_key = remove_garbage(alice_bases, bob_bases, bob_results)
+    alice_key = remove_garbage(alice_bases, bob_bases, alice_bits)
+
+    # Step 5 - random pairs of bits in their keys are checked against each other and then removed from the keys
+    # as they are no longer secret. This is used to detect the influence of potential eavesdroppers and noise.
+    # A larger sample_size is safer, but results in smaller keys.
+    sample_size = 20
+    bit_selection = randint(n, size=sample_size)
+    bob_sample = sample_bits(bob_key, bit_selection)
+    alice_sample = sample_bits(alice_key, bit_selection)
+
+    # error handling to detect eavesdroppers, noise, and any other issues in the protocol thus far
+    if (bob_sample != alice_sample):
+        print("WARNING: Key samples do not match. Noise or eavesdropper on the quantum channel is  present")
+        exit()
+    elif (bob_key!=alice_key):
+        print("WARNING: Keys do not match. Abort quantum key distribution protocol")
+        exit()
+
+    # converting int key to strings
+    string_ints = [str(int) for int in alice_key]
+    str_of_ints = "".join(string_ints)
+
+    # alice's finalized key
+    a_key = str_of_ints
+
+    # converting int key to strings
+    string_ints = [str(int) for int in bob_key]
+    str_of_ints = "".join(string_ints)
+
+    # bob's finalized key
+    b_key = str_of_ints
+
+    # only need key of 8 bits, as we are encrypting/decrypting 1 byte with them
+    a_key = a_key[0:8]
+    b_key = b_key[0:8]
+
+    return a_key, b_key
+
+def xor_encrypt(msg, key):
+    encrypted = int(msg, 2)^int(key,2)
+    return bin(encrypted)[2:].zfill(len(msg))
 
 
 
+keys = get_bb84_keys()
+a_key = keys[0]
+b_key = keys[1]
 
-
-
-
+to_encrypt = '11111111'
+encrypted_text = xor_encrypt(to_encrypt,a_key)
+decrypted_text = xor_encrypt(encrypted_text,b_key)
+print(to_encrypt, encrypted_text, decrypted_text)
 
 
 
@@ -309,7 +341,7 @@ c = bytearray(c)
 
 image2 = Image.open(io.BytesIO(c))
 Image.LOAD_TRUNCATED_IMAGES = True
-image2.save("didthiswork.jpg")
+image2.save("final.jpg")
 
 
 

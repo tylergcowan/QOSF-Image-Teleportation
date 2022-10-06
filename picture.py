@@ -277,66 +277,71 @@ def xor_encrypt(msg, key):
     return bin(encrypted)[2:].zfill(len(msg))
 
 
-
+# First, use BB84 to create and distribute keys to alice and bob
 keys = get_bb84_keys()
 a_key = keys[0]
 b_key = keys[1]
 
-to_encrypt = '11111111'
-encrypted_text = xor_encrypt(to_encrypt,a_key)
-decrypted_text = xor_encrypt(encrypted_text,b_key)
-#print(to_encrypt, encrypted_text, decrypted_text)
-
-
-
-
+# open image in the first folder (alice's folder), read its contents into a bytearray
 with open("trythis - Copy.jpg", "rb") as image:
     f = image.read()
     b = bytearray(f)
-    print(len(b))
 
 bi = []
 i = 0
+# convert from int to string of 8 bits, and encrypt using alice's key
 for xx in b:
-    # GOAL OF THIS IS TO CONVERT FROM SAY, 216, TO LIKE 10010110
     bi.append(format(b[i],'08b'))
     bi[i] = xor_encrypt(bi[i],a_key)
     i+=1
 
+i = 0
+j = 0
 
+# group of bytes to be teleported, 4 at a time
+to_teleport = []
+c = []
 
-c=[]
 # split this into groups of 4, then send the array of 4 bytes to process
-i=0
-j=0
-process=[]
 for val in bi:
-    process.append(val)
+    to_teleport.append(val)
     i+=1
-    if i==4:# send it pieces of 4 bytes
-        i=0
-        add_2_final_arr=run_circuits(process)
-        for x in add_2_final_arr:
 
-            # decrypt now:
+    # Teleporting 4 bytes at a time
+    if i==4:
+        i=0
+        # 4 bytes obtained via teleportation
+        tp=run_circuits(to_teleport)
+
+        # decrypt format each teleported byte
+        for x in tp:
+
+            # decrypt using bob's key and add to list:
             x = xor_encrypt(x,b_key)
             c.append(int(x,2))
 
+            # % completion tracker for user's awareness
             print(str(100*float(j)/float(len(bi)))[0:4]+" % completed")
             j+=1
-        process=[]
 
-print("Teleportation and decryption of image complete")
+        # reset array of 4 bytes each time it is teleported
+        to_teleport = []
 
-c.append(int('11011001',2)) # hardcoding this last one because real file isn't multiple of 4 pixels
+
+print("Teleportation and decryption of image complete.")
+
+# hardcoding this last one because real file isn't multiple of 4 pixels
+c.append(int('11011001',2))
+
+# convert teleported/decrypted array of bytes to bytearray type
 c = bytearray(c)
 
-
-
+# Create new image using teleported and decrypted bytearray
 image2 = Image.open(io.BytesIO(c))
 Image.LOAD_TRUNCATED_IMAGES = True
+
+# save image in destination folder (Bob's folder)
 image2.save("final2.jpg")
 
-print("Image has been saved in destination folder")
-
-
+# make this more explicit, name of the folders, and the image file
+print("Image has been saved in destination folder.")

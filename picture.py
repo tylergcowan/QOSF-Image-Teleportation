@@ -399,9 +399,12 @@ def send_file(mentee_path, file_name, mentor_path):
     is expected to send the exact image to the destination folder in the absence of noise or eavesdropping on the
     quantum channel during the BB84 QKD protocol.
 
-    :param mentee_path: path to mentee/alice's folder, containing the image to be sent
-    :param file_name: name of jpg file to be encrypted and teleported
-    :param mentor_path: path to mentor/bob's folder, which the file will be sent to
+    :param mentee_path: path to mentee/alice's folder, containing the image to be sent.
+        example: "qosf_app_final/mentee/"
+    :param file_name: name of jpg file to be encrypted and teleported. 
+        example: "qosf.jpg"
+    :param mentor_path: path to mentor/bob's folder, which the file will be sent to 
+        example: "qosf_app_final/mentor/"
     :return success: boolean to indicate success or failure of teleportation from mentee to mentor folder
     """
 
@@ -414,8 +417,7 @@ def send_file(mentee_path, file_name, mentor_path):
     b_key = keys[1]
 
     # open image in the first folder (alice's folder), read its contents into a bytearray
-    img_name="trythis - Copy.jpg"
-    with open(img_name, "rb") as image:
+    with open(mentee_path+file_name, "rb") as image:
         raw_img = image.read()
         img_origin = bytearray(raw_img)
 
@@ -478,19 +480,21 @@ def send_file(mentee_path, file_name, mentor_path):
         Image.LOAD_TRUNCATED_IMAGES = True
 
         # save teleported & decrypted image in destination folder (Bob's folder)
-        tp_img_name="final2.jpg"
-        image2.save(tp_img_name)
+        image2.save(mentor_path+file_name)
 
         # Program completed. File has successfully been encrypted by alice, transformed into a quantum circuit,
         # teleported, and decrypted by Bob.
-        print(tp_img_name + " has been saved in the mentee/alice folder folder.")
+        print(file_name + " has been saved in the folder: "+mentor_path)
         success = True
 
     except:
-        print(tp_img_name + " has NOT been saved in in the mentor/bob folder.")
+        print(file_name + " has NOT been saved in the folder: "+mentor_path)
         success = False
 
     return success
 
+mentee_path = r"C:\Users/tyler\Documents\GitHub\qosf_app_final\mentee/"
+file_name = "trythis - Copy.jpg"
+mentor_path = r"C:\Users/tyler\Documents\GitHub\qosf_app_final\mentor/"
 
-success=send_file(1,2,3)
+success=send_file(mentee_path, file_name, mentor_path)

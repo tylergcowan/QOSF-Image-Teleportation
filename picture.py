@@ -112,7 +112,7 @@ def run_circuits(values):
 
     #print(qc_image)
 
-    shot_count=100
+    shot_count=30 #20 failed.
     aer_sim = Aer.get_backend('aer_simulator')
     t_qc_image = transpile(qc_image, aer_sim)
     qobj = assemble(t_qc_image, shots=shot_count)
@@ -146,6 +146,9 @@ def run_circuits(values):
     #print(counts[0],counts[1],counts[2],counts[3])
     if( (counts[0]+counts[1]+counts[2]+counts[3])!=shot_count):
         print("ERROR: some intensity measurement possibilities not accounted for, examine.")
+        exit()
+    elif (counts[0]<=0 or counts[1]<=0 or counts[2]<=0 or counts[3]<=0):
+        print("ERROR: insufficient shots in circuit simulation to check all expected pixel intensities from measurements.")
         exit()
     else:
         # we have 4 unique measurement outcomes, which indicates statistical significance
@@ -186,7 +189,7 @@ c=bytearray(c)
 
 
 final_b=[]
-
+c=[]
 # split this into groups of 4, then send the array of 4 bytes to process
 i=0
 process=[]
@@ -196,16 +199,31 @@ for val in bi:
     if i==4:# send it pieces of 4 bytes
         i=0
         # INSERT CALLS TO PROCESS THE ARRAY OF 4
-        print(process)
+        #print(process)
         add_2_final_arr=run_circuits(process)
         print(add_2_final_arr)
+
+        for x in add_2_final_arr:
+            c.append(int(x,2))
+
         process=[]
 
+print("quantum circuit execution confirmed!")
+# this is how you'll do it. use this to convert at the end
+'''
+c=[]
+for x in bi:
+    c.append(int(x,2))
+'''
 
-#image2 = Image.open(io.BytesIO(final_b))
-#image2.save("testttt.jpg")
+c=bytearray(c)
+print(c)
+print("bytearray conversion confirmed")
 
+image2 = Image.open(io.BytesIO(c))
+image2.save("didthisworklol.jpg")
 
+exit()
 
 '''
 j=0

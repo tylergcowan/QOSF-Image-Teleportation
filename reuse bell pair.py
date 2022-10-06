@@ -4,7 +4,7 @@ from qiskit.quantum_info import partial_trace, Statevector
 
 
 def run_circuits(values):
-
+    print(values)
     # Initialize the quantum circuit for the image
     # Pixel position
     idx = QuantumRegister(2, 'idx')
@@ -71,7 +71,7 @@ def run_circuits(values):
 
     # Encode the 4th pixel
     # Add the CCNOT gates:
-    for idx, px_value in enumerate(values[3]):
+    for idx, px_value in enumerate((values[3])[::-1]):
         if(px_value=='1'):
             qc_image.ccx(num_qubits-1-2,num_qubits-2-2, idx)
     qc_image.barrier()
@@ -109,7 +109,7 @@ def run_circuits(values):
         qc_image.reset(qc_image.qubits[10:12])
         qc_image.barrier()
 
-    #print(qc_image)
+    print(qc_image)
 
     shot_count=100
     aer_sim = Aer.get_backend('aer_simulator')
@@ -118,7 +118,7 @@ def run_circuits(values):
     job_neqr = aer_sim.run(qobj)
     result_neqr = job_neqr.result()
     counts_neqr = result_neqr.get_counts()
-    #print(counts_neqr)
+    print(counts_neqr)
 
     # 4 pixel coordinates: [00, 01, 10, 11]
     # 16 maximum expected measurement possibilities (ignoring 2 classical registers used for teleportation)
@@ -140,9 +140,9 @@ def run_circuits(values):
     # Used to verify this assumption: we have enough shots and low enough noise such that
     # we expect with very high probability to only have 4 unique measurement outcomes,
     # that is: one intensity (encoded in 8 bits) for each of 4 pixel coordinates.
-    #print(sum(counts), " vs ", shot_count)
-    #print("-")
-    #print(counts[0],counts[1],counts[2],counts[3])
+    print(sum(counts), " vs ", shot_count)
+    print("-")
+    print(counts[0],counts[1],counts[2],counts[3])
     if( (counts[0]+counts[1]+counts[2]+counts[3])!=shot_count):
         print("ERROR: some intensity measurement possibilities not accounted for, examine.")
         exit()
@@ -159,8 +159,12 @@ def run_circuits(values):
     # and appended to the appropriate final recreated image array.
 
 
-values=['00111010','11111111','11001000','11111111']
-processed=run_circuits(values)
+#values=['00111010','11111111','11001000','11111111']
+#processed=run_circuits(values)
+
+# now change the format of processed and append it to the true array
+processed=run_circuits(['11111111', '11011000', '11111111', '11101010'])
+
 print(processed)
 exit()
 

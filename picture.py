@@ -27,75 +27,91 @@ def bob_gates(qc, qubit, crz, crx):
 
 def run_circuits(values):
 
-    # Initialize the quantum circuit for the image
-    # Pixel position
-    idx = QuantumRegister(2, 'idx')
-    # grayscale pixel intensity value
-    intensity = QuantumRegister(8,'intensity')
-    #teeleportation qubits (bellpair)
-    teleport = QuantumRegister(2,'teleport')
-    # classical register
-    cr = ClassicalRegister(10, 'cr')
-    crz = ClassicalRegister(1, name="crz") # and 2 classical bits
-    crx = ClassicalRegister(1, name="crx") # in 2 different registers
-    # create the quantum circuit for the image
-    qc_image = QuantumCircuit(intensity, idx, teleport ,cr, crx, crz)
+    # Initialize the quantum circuit representation for 4 pixels of the image.
 
-    # set the total number of qubits
+    # This process is split into groups of 4 pixels to simulate fewer qubits at a time,
+    # in order to conserve computing resources and to provide the user of progress
+    # updates on the teleportation. Only 2 qubits are needed for position this way.
+
+    # Pixel position (4 positions represented as 00, 01, 10, and 11)
+    idx = QuantumRegister(2, 'idx')
+
+    # pixel intensity (grayscale, requires 8 bits for 1 to 255)
+    intensity = QuantumRegister(8,'intensity')
+
+    # bell pair for teleporting each of the 10 neqr qubits above
+    teleport = QuantumRegister(2,'teleport')
+
+    # classical registers for measurements to be recorded in during simulation of quantum circuit
+    cr = ClassicalRegister(10, 'cr') # -> for 10 NEQR qubits
+    crz = ClassicalRegister(1, name="crz") # -> for 1 teleportation qubit
+    crx = ClassicalRegister(1, name="crx") # -> for 1 teleportation qubit
+
+    # create the quantum circuit of the 4 pixel image. 3 quantum registers, 3 classical.
+    qc_image = QuantumCircuit(intensity, idx, teleport, cr, crx, crz)
+
+    # get the total number of qubits in this circuit
     num_qubits = qc_image.num_qubits
 
-    # Optional: Add Identity gates to the intensity values
-    for idx in range(intensity.size):
-        qc_image.i(idx)
-
-    # Add Hadamard gates to the pixel positions
+    # Use hadamard gate on pixel position qubits to induce superposition, which will allow us
+    # to take advantage of every position in the 2x2 image (subset) at once.
     qc_image.h(8)
     qc_image.h(9)
+
+    # barriers are used to delineate sections of the quantum circuit
     qc_image.barrier()
 
-    # Encode the first pixel, 00
-    if (values[0]=='00000000'):
-        pass
-    else:
-        qc_image.x(qc_image.num_qubits - 1 - 2)
-        qc_image.x(qc_image.num_qubits - 2 - 2)
-        for idx, px_value in enumerate((values[0])[::-1]):
-            if (px_value == '1'):
-                qc_image.ccx(num_qubits - 1 - 2, num_qubits - 2 - 2, idx)
-        qc_image.x(qc_image.num_qubits - 1 - 2)
-        qc_image.x(qc_image.num_qubits - 2 - 2)
-        #qc_image.x(qc_image.num_qubits - 1 - 2)
-    qc_image.barrier()
-    qc_image.draw()
+    # The 1st pixel, 00, is encoded into the image circuit.
+    # Make the forthcoming CNOT gate(s) trigger for 00 pixel by wrapping with X gates on pixel qubits.
+    # This X gate wrapping is undertaken for each pixel, except for position 11 (functioning as a default)
+    qc_image.x(qc_image.num_qubits-3)
+    qc_image.x(qc_image.num_qubits-4)
 
-    # Encode the second pixel
-    # Add the NOT gate to set the position at 01:
-    qc_image.x(qc_image.num_qubits-1-2)
+    # Add CNOT gate to each targeted intensity qubit in the byte with qubit controls on pixel qubits (2)
+    for idx, px_value in enumerate((values[0])[::-1]):
+        if (px_value == '1'):
+            qc_image.ccx(num_qubits-3, num_qubits-4, idx)
+
+    # end of the X gate wrapping for pixel 00, resetting the first 2
+    qc_image.x(qc_image.num_qubits-3)
+    qc_image.x(qc_image.num_qubits-4)
+
+    qc_image.barrier()
+
+    # The 2nd pixel, 01, is encoded into the image circuit.
+    # For this pixel, the control must be a combination of 0 and 1 to trigger the CNOT gate, hence the X gates.
+    qc_image.x(qc_image.num_qubits-3)
+
+    # Add CNOT gate to each targeted intensity qubit in the byte with qubit controls on pixel qubits (2)
     for idx, px_value in enumerate((values[1])[::-1]):
         if(px_value=='1'):
-            qc_image.ccx(num_qubits-1-2, num_qubits-2-2, idx)
+            qc_image.ccx(num_qubits-3, num_qubits-4, idx)
 
-    qc_image.x(num_qubits-1-2)
+    # Finish X gate wrap of pixel 01, resetting the first one
+    qc_image.x(num_qubits-3)
+
     qc_image.barrier()
 
+    # The 3rd pixel, 10, is encoded into the image circuit
+    # As with pixel 2, we want the CNOT gate to trigger when control is a combination of 1 and 0.
+    qc_image.x(num_qubits-4)
 
-
-    # Encode the third pixel
-    # Add the 0CNOT gates, where 0 is on X pixel:
-    qc_image.x(num_qubits-2-2)
+    # Add CNOT gate to each targeted intensity qubit in the byte with qubit controls on pixel qubits (2)
     for idx, px_value in enumerate((values[2])[::-1]):
         if(px_value=='1'):
-            qc_image.ccx(num_qubits-1-2, num_qubits-2-2, idx)
+            qc_image.ccx(num_qubits-3, num_qubits-4, idx)
 
+    # Finish X gate wrap of pixel 10, resetting the first one
     qc_image.x(num_qubits-2-2)
+
     qc_image.barrier()
 
-
-    # Encode the 4th pixel
-    # Add the CCNOT gates:
+    # The 4th pixel, 11, is encoded into the image circuit. No X gate wrapping needed for 11.
+    # Add CNOT gate to each targeted intensity qubit in the byte with qubit controls on pixel qubits (2)
     for idx, px_value in enumerate((values[3])[::-1]):
         if(px_value=='1'):
-            qc_image.ccx(num_qubits-1-2,num_qubits-2-2, idx)
+            qc_image.ccx(num_qubits-3,num_qubits-4, idx)
+
     qc_image.barrier()
 
     # build teleportation pairs
@@ -111,7 +127,9 @@ def run_circuits(values):
         qc_image.barrier()
 
 
-    shot_count = 40 #20 failed often. 30 failed rarely. 40 should be safe, and not too slow.
+    # Run the NEQR image representation and subsequent teleportation with the Aer simulator
+    # 20 shots failed often. 30 failed rarely. 40 should be safe, and not too time consuming.
+    shot_count = 40
     aer_sim = Aer.get_backend('aer_simulator')
     t_qc_image = transpile(qc_image, aer_sim)
     qobj = assemble(t_qc_image, shots=shot_count)
@@ -123,42 +141,49 @@ def run_circuits(values):
     # 16 maximum expected measurement possibilities (ignoring 2 classical registers used for teleportation)
     counts=[0,0,0,0]
 
+    # Check dictionary keys for the 4 unique measurement outcomes (excluding the crz/crx classical registers).
+    # These 4 unique measurement outcomes, roughly equal in their prevalence,
     for key in counts_neqr.keys():
+
         if (key[4:]=='00'+values[0]):
             counts[0]=counts[0]+counts_neqr[key]
+
         elif (key[4:]=='01'+values[1]):
             counts[1]=counts[1]+counts_neqr[key]
+
         elif (key[4:] == '10'+values[2]):
             counts[2] = counts[2] + counts_neqr[key]
+
         elif (key[4:]=='11'+values[3]):
             counts[3]=counts[3]+counts_neqr[key]
 
-    # the array we will return from the def that does this entire thing:
-    process=[]
+    # 4 encoded then teleported bytes, to be returned, which are to be deduced from counts of measurement
+    # simulations of the quantum circuit representation of the 2x2 image.
+    processed = []
 
     # Used to verify this assumption: we have enough shots and low enough noise such that
     # we expect with very high probability to only have 4 unique measurement outcomes,
     # that is: one intensity (encoded in 8 bits) for each of 4 pixel coordinates.
-    #print(sum(counts), " vs ", shot_count)
-    #print("-")
-    #print(counts[0],counts[1],counts[2],counts[3])
-    if( (counts[0]+counts[1]+counts[2]+counts[3])!=shot_count):
+
+    if(sum(counts) != shot_count):
+        # Counts for the 4 unique/expected measurement outcomes must equal the overall simulation shot count.
+        # Otherwise, we have not accounted for every possible measurement of the simulated quantum circuit. 
+        # This is only true in this idealized simulation.
         print("ERROR: some intensity measurement possibilities not accounted for, examine.")
         exit()
     elif (counts[0]<=0 or counts[1]<=0 or counts[2]<=0 or counts[3]<=0):
+        # If insufficient shots are used during the Aer simulation, one may not measure at least one
         print("ERROR: insufficient shots in circuit simulation to check all expected pixel intensities from measurements.")
         exit()
     else:
-        # we have 4 unique measurement outcomes, which indicates statistical significance
-        process=[values[0],values[1],values[2],values[3]]
-        pass
+        # We have 4 unique measurement outcomes for the 10 NEQR qubits, which indicates statistical significance.
+        # In the absence of noise (and even noise/eavesdropping during the QKD phase), if there is only 1 unique
+        # intensity measurement outcome for each pixel position, we can assume the initial byte values have been
+        # 100% accurately encoded into the quantum circuit, teleported, and ultimately measured. In the presence of
+        # noise, this process would need to employ tolerances on the measurement counts, and more statistical analysis.
+        processed = [values[0],values[1],values[2],values[3]]
 
-    #print(process)
-    #print(sum(counts))
-    return process
-
-    # when this is all inside a function, return process[], which will then be converted to bytes again
-    # and appended to the appropriate final recreated image array.
+    return processed
 
 def sample_bits(bits, selection):
     sample = []
@@ -277,7 +302,7 @@ def xor_encrypt(msg, key):
     return bin(encrypted)[2:].zfill(len(msg))
 
 
-# First, use BB84 to create and distribute keys to alice and bob
+# First, use BB84 to create and distribute binary keys to alice and bob
 keys = get_bb84_keys()
 a_key = keys[0]
 b_key = keys[1]
@@ -321,7 +346,7 @@ for val in bi:
             c.append(int(x,2))
 
             # % completion tracker for user's awareness
-            print(str(100*float(j)/float(len(bi)))[0:4]+" % completed")
+            print("Image teleportation "+str(100*float(j)/float(len(bi)))[0:4]+" % completed")
             j+=1
 
         # reset array of 4 bytes each time it is teleported

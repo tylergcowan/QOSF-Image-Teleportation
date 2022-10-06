@@ -5,25 +5,32 @@ from numpy.random import randint
 import numpy as np
 
 def create_bell_pair(qc, a, b):
-    """Creates a bell pair in qc using qubits a & b"""
-    qc.h(a)  # Put qubit a into state |+>
-    qc.cx(a, b)  # CNOT with a as control and b as target
+    """Creates a bell pair in the quantum image circuit using qubits a & b. This
+    is done by moving one qubit into the X basis with an H gate, and then applying a CNOT
+    gate to the other qubit, using the first qubit as a control"""
+    qc.h(a)  # Put qubit a into state |+> using the hadmard gate
+    qc.cx(a, b)  # CNOT with the a qubit as the control and b qubit as the target
 
-def alice_gates(qc, psi, a):
-    qc.cx(psi, a)  # CNOT gate applied to q1, controlled by psi (q0)
-    qc.h(psi)  # psi is q0 in our our quantum circuit
+def alice_gates(qc, b, a):
+    """Alice applies the CNOT gate to one qubit, which is contrlled by
+    the qubit she wants to send to bob. The control qubit is also
+    put through a hadamard gate."""
+    qc.cx(b, a)  # CNOT gate is applied to qubit a, controlled by qubit b
+    qc.h(b)  # hadamard gate is applied to qubit b
 
 def measure_and_send(qc, a, b, crz, crx):
-    """Measures qubits a & b and 'sends' the results to Bob"""
+    """Alice measures qubits a and b, puts the results into the classical registers crz and crx.
+    These classical results are trasnmitted to Bob through a classical channel."""
     qc.barrier()
+    # crz and crx are the associated classical registers for each teleportation/bell pair qubit.
     qc.measure(a, crz)
     qc.measure(b, crx)
 
 def bob_gates(qc, qubit, crz, crx):
     # Here we use c_if to control our gates with a classical
     # bit instead of a qubit
-    qc.x(qubit).c_if(crx, 1)  # Apply gates if the registers
-    qc.z(qubit).c_if(crz, 1)  # are in the state '1'
+    qc.x(qubit).c_if(crx, 1)  # Only apply gates when the classical registers are in the state '1'
+    qc.z(qubit).c_if(crz, 1)
 
 def run_circuits(values):
 
@@ -33,19 +40,19 @@ def run_circuits(values):
     # in order to conserve computing resources and to provide the user of progress
     # updates on the teleportation. Only 2 qubits are needed for position this way.
 
-    # Pixel position (4 positions represented as 00, 01, 10, and 11)
+    # Pixel position qubits (4 positions represented as 00, 01, 10, and 11)
     idx = QuantumRegister(2, 'idx')
 
-    # pixel intensity (grayscale, requires 8 bits for 1 to 255)
+    # pixel intensity qubits (grayscale, requires 8 bits for 1 to 255)
     intensity = QuantumRegister(8,'intensity')
 
-    # bell pair for teleporting each of the 10 neqr qubits above
+    # bell pair qubits for teleporting each of the 10 NEQR qubits above
     teleport = QuantumRegister(2,'teleport')
 
     # classical registers for measurements to be recorded in during simulation of quantum circuit
     cr = ClassicalRegister(10, 'cr') # -> for 10 NEQR qubits
     crz = ClassicalRegister(1, name="crz") # -> for 1 teleportation qubit
-    crx = ClassicalRegister(1, name="crx") # -> for 1 teleportation qubit
+    crx = ClassicalRegister(1, name="crx") # -> for 1 more teleportation qubit
 
     # create the quantum circuit of the 4 pixel image. 3 quantum registers, 3 classical.
     qc_image = QuantumCircuit(intensity, idx, teleport, cr, crx, crz)
@@ -67,7 +74,8 @@ def run_circuits(values):
     qc_image.x(qc_image.num_qubits-3)
     qc_image.x(qc_image.num_qubits-4)
 
-    # Add CNOT gate to each targeted intensity qubit in the byte with qubit controls on pixel qubits (2)
+    # Add CNOT gate to each targeted intensity qubit in the byte with qubit controls on pixel qubits (2).
+    # Bit values are reversed so that the measurements are in the order one expects.
     for idx, px_value in enumerate((values[0])[::-1]):
         if (px_value == '1'):
             qc_image.ccx(num_qubits-3, num_qubits-4, idx)
@@ -102,7 +110,7 @@ def run_circuits(values):
             qc_image.ccx(num_qubits-3, num_qubits-4, idx)
 
     # Finish X gate wrap of pixel 10, resetting the first one
-    qc_image.x(num_qubits-2-2)
+    qc_image.x(num_qubits-4)
 
     qc_image.barrier()
 
@@ -114,35 +122,56 @@ def run_circuits(values):
 
     qc_image.barrier()
 
-    # build teleportation pairs
+    # At this stage, the NEQR circuit representation for the 2x2 image subset has been built.
+
+    # Next, we utilize the 2 teleportation qubits to teleport each NEQR qubit from alice to bob.
+    # This process is repeated for each of the 10 NEQR qubits (8 intensity, 2 pixel position)
+    # with the teleportation qubits resetting each time in order to be reused.
     for i in range(0,num_qubits-2):
+
+        # First, a bell pair is created by a third party (let's call them Eve!).
+        # One of each of these entangled qubits is given to alice and bob.
         create_bell_pair(qc_image, 10, 11)
+
         qc_image.barrier()
+
+        # Alice applies a CNOT gate to her bell pair qubit, controlled by the
+        # qubit state we want to teleport to bob. H gate is applied to the latter qubit as well.
         alice_gates(qc_image, i, 10)
+
+        # Alice measures the teleportation qubit (bell-pair half) that she owns, and the qubit
+        # state she wants to send to Bob. These results are stored in classical bits and sent to Bob.
         measure_and_send(qc_image, i, 10, crz, crx)
+
         qc_image.barrier()
+
         bob_gates(qc_image, 11, crz, crx)
         qc_image.measure(11, cr[i])
         qc_image.reset(qc_image.qubits[10:12])
+
         qc_image.barrier()
 
 
-    # Run the NEQR image representation and subsequent teleportation with the Aer simulator
-    # 20 shots failed often. 30 failed rarely. 40 should be safe, and not too time consuming.
+    # Run the NEQR image representation and subsequent teleportation and measurements with the Aer simulator
+
+    # 20 shots failed often. 30 failed rarely. 40 should be safe, and not too time-consuming.
     shot_count = 40
     aer_sim = Aer.get_backend('aer_simulator')
     t_qc_image = transpile(qc_image, aer_sim)
     qobj = assemble(t_qc_image, shots=shot_count)
     job_neqr = aer_sim.run(qobj)
     result_neqr = job_neqr.result()
+
+    # dictionary with all measurement results for the total 12 classical register bits
     counts_neqr = result_neqr.get_counts()
 
-    # 4 pixel coordinates: [00, 01, 10, 11]
-    # 16 maximum expected measurement possibilities (ignoring 2 classical registers used for teleportation)
+    # measurement counts for each intensity, each likely mapping onto 1 of 4 pixel coordinates: [00, 01, 10, 11]
     counts=[0,0,0,0]
 
     # Check dictionary keys for the 4 unique measurement outcomes (excluding the crz/crx classical registers).
-    # These 4 unique measurement outcomes, roughly equal in their prevalence,
+    # These 4 unique measurement outcomes, roughly equal in their prevalence, assign pixel location with the
+    # first 2 bits, and intensity with the following 8 bits. The first 2 bits in these measurements may be
+    # excluded from our analysis, as they are a relic of the teleportation qubit measurements.
     for key in counts_neqr.keys():
 
         if (key[4:]=='00'+values[0]):
@@ -161,26 +190,28 @@ def run_circuits(values):
     # simulations of the quantum circuit representation of the 2x2 image.
     processed = []
 
-    # Used to verify this assumption: we have enough shots and low enough noise such that
-    # we expect with very high probability to only have 4 unique measurement outcomes,
-    # that is: one intensity (encoded in 8 bits) for each of 4 pixel coordinates.
-
+    # In this idealized simulation, we expect to have enough shots and low noise such that there are only
+    # 4 unique measurement outcomes, corresponding to the 8-bit intensity of each of 2-bit pixel positions.
     if(sum(counts) != shot_count):
         # Counts for the 4 unique/expected measurement outcomes must equal the overall simulation shot count.
-        # Otherwise, we have not accounted for every possible measurement of the simulated quantum circuit. 
+        # Otherwise, we have not accounted for every possible measurement of the simulated quantum circuit.
         # This is only true in this idealized simulation.
-        print("ERROR: some intensity measurement possibilities not accounted for, examine.")
+        print("ERROR: some measurement possibilities not accounted for in the count. Please check counts_neqr.")
+        print("EXITING...")
         exit()
     elif (counts[0]<=0 or counts[1]<=0 or counts[2]<=0 or counts[3]<=0):
         # If insufficient shots are used during the Aer simulation, one may not measure at least one
         print("ERROR: insufficient shots in circuit simulation to check all expected pixel intensities from measurements.")
+        print("Please try again with higher shot count. 100 shots is vanishingly unlikely to fail.")
+        print("EXITING...")
         exit()
     else:
         # We have 4 unique measurement outcomes for the 10 NEQR qubits, which indicates statistical significance.
         # In the absence of noise (and even noise/eavesdropping during the QKD phase), if there is only 1 unique
         # intensity measurement outcome for each pixel position, we can assume the initial byte values have been
         # 100% accurately encoded into the quantum circuit, teleported, and ultimately measured. In the presence of
-        # noise, this process would need to employ tolerances on the measurement counts, and more statistical analysis.
+        # noise, this process would need to employ tolerances on the measurement counts, and more statistical analysis
+        # to determine the best intensity value for each pixel.
         processed = [values[0],values[1],values[2],values[3]]
 
     return processed

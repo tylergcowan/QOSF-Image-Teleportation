@@ -2,15 +2,6 @@ from qiskit import QuantumCircuit, Aer, assemble
 from numpy.random import randint
 import numpy as np
 
-
-a = "11001100"
-b = "1100010100"
-y = int(a, 2)^int(b,2)
-print(bin(y)[2:].zfill(len(a)))
-
-exit()
-
-
 # https://qiskit.org/textbook/ch-algorithms/quantum-key-distribution.html
 def encode_message(bits, bases):
     message = []
@@ -47,43 +38,6 @@ def measure_message(message, bases):
         measurements.append(measured_bit)
     return measurements
 
-# https://github.com/VoxelPixel/CiphersInPython/blob/master/XOR%20Cipher.py
-def cipher_encryption(msg,key):
-    print(msg)
-    encrypt_hex = ""
-    key_itr = 0
-    for i in range(len(msg)):
-        temp = ord(msg[i]) ^ ord(key[key_itr])
-        # zfill will pad a single letter hex with 0, to make it two letter pair
-        encrypt_hex += hex(temp)[2:].zfill(2)
-        key_itr += 1
-        if key_itr >= len(key):
-            # once all of the key's letters are used, repeat the key
-            key_itr = 0
-
-    print("Encrypted Text: {}".format(encrypt_hex))
-    return format(encrypt_hex)
-
-def cipher_decryption(msg,key):
-
-    hex_to_uni = ""
-    for i in range(0, len(msg), 2):
-        hex_to_uni += bytes.fromhex(msg[i:i+2]).decode('utf-8')
-
-    decryp_text = ""
-    key_itr = 0
-    for i in range(len(hex_to_uni)):
-        temp = ord(hex_to_uni[i]) ^ ord(key[key_itr])
-        # zfill will pad a single letter hex with 0, to make it two letter pair
-        decryp_text += chr(temp)
-        key_itr += 1
-        if key_itr >= len(key):
-            # once all of the key's letters are used, repeat the key
-            key_itr = 0
-
-    print("Decrypted Text: {}".format(decryp_text))
-    return format(decryp_text)
-
 def remove_garbage(a_bases, b_bases, bits):
     good_bits = []
     for q in range(n):
@@ -105,7 +59,7 @@ def sample_bits(bits, selection):
         sample.append(bits.pop(i))
     return sample
 
-n = 1000
+n = 100
 # Step 1
 alice_bits = randint(2, size=n)
 alice_bases = randint(2, size=n)
@@ -122,7 +76,7 @@ bob_key = remove_garbage(alice_bases, bob_bases, bob_results)
 alice_key = remove_garbage(alice_bases, bob_bases, alice_bits)
 
 # Step 5
-sample_size = 100
+sample_size = 10 # more is safer against eavesdropping and noise
 bit_selection = randint(n, size=sample_size)
 bob_sample = sample_bits(bob_key, bit_selection)
 alice_sample = sample_bits(alice_key, bit_selection)
@@ -130,20 +84,38 @@ alice_sample = sample_bits(alice_key, bit_selection)
 if (bob_sample != alice_sample):
     print("WARNING: Key samples do not match. Noise or eavesdropper on the quantum channel is  present")
     exit()
+elif (bob_key!=alice_key):
+    print("WARNING: Keys do not match. Abort quantum key distribution protocol")
+    exit()
 
-print(len(bob_key))
 
 string_ints = [str(int) for int in alice_key]
-str_of_ints = ",".join(string_ints)
+str_of_ints = "".join(string_ints)
 a_key=str_of_ints
 
 string_ints = [str(int) for int in bob_key]
-str_of_ints = ",".join(string_ints)
+str_of_ints = "".join(string_ints)
 b_key = str_of_ints
 
-to_encrypt = '1001100'
+a_key=a_key[0:8]
+b_key=b_key[0:8]
+to_encrypt = '10011000'
 
-a= cipher_encryption(to_encrypt,a_key)
-c=cipher_decryption(a,b_key)
+# returns encrypted byte
+def xor_encrypt(msg, key):
+    encrypted = int(msg, 2)^int(key,2)
+    return bin(encrypted)[2:].zfill(len(a))
+
+def xor_decrypt(msg, key):
+    decrypted=int(msg, 2)^int(key,2)
+    return bin(decrypted)[2:].zfill(len(msg))
+
+a = "11011111"
+b = "11001011"
+
+encrypted_text=xor_encrypt(to_encrypt,a_key)
+decrypted_text=xor_decrypt(encrypted_text,b_key)
+print(to_encrypt, encrypted_text, decrypted_text)
+
 
 

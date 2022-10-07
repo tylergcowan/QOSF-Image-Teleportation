@@ -44,7 +44,7 @@ If mentor_path does not exist it will be created.
 
 ########################### Analysis ############################
 
-In the absence of noise and eavesdropping on the quantum channel, this process is able to perfectly send the image in the mentee folder to the mentor folder. Noise or eavesdropping on the quantum channel could reuslt in keys that are not identical after using the BB84 protocol, making perfect decryption impossible. This is because eavesdropping can occur in between step 1 and 2, before bob (or the recipient) measures the qubits prepared by alice (the sender). This eavesdropping can be detected during the sampling stage, which is undertaken trivially in this program. This is a prime benefit of the BB84 protocol for encryption using XOR one-time pad - eavesdropping can be detected, which prevents the secrecy of the encrypted message from being tainted.
+In the absence of noise and eavesdropping on the quantum channel, this process is able to perfectly send the image in the mentee folder to the mentor folder. Noise or eavesdropping on the quantum channel could result in keys that are not identical after using the BB84 protocol, making perfect decryption impossible. This is because eavesdropping can occur in between step 1 and 2, before bob (or the recipient) measures the qubits prepared by alice (the sender). This eavesdropping can be detected during the sampling stage, which is undertaken trivially in this program. This is a prime benefit of the BB84 protocol for encryption using XOR one-time pad - eavesdropping can be detected, which prevents the secrecy of the encrypted message from being tainted.
 
 NEQR was chosen over FRQI to represent the encrypted image as a quantum circuit because it is quadratically faster, and the image can be retrieved via measurement accurately (assuming low noise, no eavesdropping, and sufficient simulator shots) as opposed to probabilistically. Representing a digital image as a quantum circuit opens up the possibility of using entanglement, superposition, and interference to create faster versions of classical algorithms. However, noise, decoherence can result in the encrypted image being transmitted imperfectly. Given the generalizable nature of NEQR, it is a benefit that an encrypted or unencrypted message alike can be sent. Breaking this protocol into pixel groups of 4 also means you can use a quantum computer with fewer qubits to execute this circuit. Any changes to the image may only be present in a small section of it, rather than the entire image this way as well. 
 
@@ -61,9 +61,11 @@ Overall, I think this method is slow but idealized when simulated on my laptop. 
 
 ########################### Citations ###########################
 
-BB84 Protocol: https://www.qmunity.tech/tutorials/quantum-key-distribution-with-bb84
-Quantum Teleportation: https://qiskit.org/textbook/ch-algorithms/teleportation.html
-Quantum Image Processing: https://qiskit.org/textbook/ch-applications/image-processing-frqi-neqr.html
+- BB84 Protocol: https://www.qmunity.tech/tutorials/quantum-key-distribution-with-bb84
+
+- Quantum Teleportation: https://qiskit.org/textbook/ch-algorithms/teleportation.html
+
+- Quantum Image Processing: https://qiskit.org/textbook/ch-applications/image-processing-frqi-neqr.html
 
 Thank you to the contributors to these sources, I could not have accomplished
 this task without you!

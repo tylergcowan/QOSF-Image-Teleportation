@@ -61,7 +61,7 @@ Overall, I think this method is slow but idealized when simulated on my laptop. 
 
 ########################### Citations ###########################
 
-- BB84 Protocol: https://www.qmunity.tech/tutorials/quantum-key-distribution-with-bb84
+- BB84 Protocol: https://qiskit.org/textbook/ch-algorithms/quantum-key-distribution.html
 
 - Quantum Teleportation: https://qiskit.org/textbook/ch-algorithms/teleportation.html
 

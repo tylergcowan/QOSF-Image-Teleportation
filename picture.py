@@ -1,6 +1,7 @@
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit, Aer, transpile, assemble
 import PIL.Image as Image #NOTE: Pillow imported instead of PIL
 import io
+import os
 from numpy.random import randint
 import numpy as np
 
@@ -497,12 +498,22 @@ def send_file(mentee_path, file_name, mentor_path):
 
 ######################### EXAMPLE ######################################################
 
-# mentee folder path, jpg (to be teleported) file name, and mentor folder path
-mentee_path = r"C:\Users\tyler\Documents\GitHub\qosf_app_final\mentee\\"
-file_name = "qosf.jpg"
-mentor_path = r"C:\Users\tyler\Documents\GitHub\qosf_app_final\mentor\\"
+if __name__ == "__main__":
 
-# send the image file_name from mentee_path to mentor_path
-success = send_file(mentee_path, file_name, mentor_path)
+    # mentee folder path, jpg (to be teleported) file name, and mentor folder path
+    mentee_path = r".\mentee\\"
+    file_name = "qosf.jpg"
+    mentor_path = r".\mentor\\"
+
+    # Check whether the specified path exists or not
+    isExist = os.path.exists(mentor_path)
+
+    if (not isExist):
+        # Create new directory because it does not exist yet
+        os.makedirs(mentor_path)
+        print("A new directory at " + mentor_path + " has been created")
+
+    # send the image file_name from mentee_path to mentor_path
+    success = send_file(mentee_path, file_name, mentor_path)
 
 ####################### END OF PROGRAM #################################################

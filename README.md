@@ -34,9 +34,13 @@ It can be executed by running:
 - python picture.py
 
 Example inputs to send_file:
-* mentee_path: r"C:\Users\tyler\Documents\GitHub\qosf_app_final\mentee\\"
-* file_name: "qosf.jpg"
-* mentor_path: r"C:\Users\tyler\Documents\GitHub\qosf_app_final\mentor\\"
+* mentee_path = r".\mentee\\"
+* file_name = "qosf.jpg"
+* mentor_path = r".\mentor\\"
+
+Which is executed as follows: send_file(mentee_path, file_name, mentor_path).
+
+If mentor_path does not exist it will be created. 
 
 ########################### Analysis ############################
 
